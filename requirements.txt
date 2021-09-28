@@ -4,7 +4,6 @@ numpy
 librosa
 opencv-python
 python_speech_features
-pickle
 matplotlib
 scikit-image
 Pillow
