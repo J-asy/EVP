@@ -35,7 +35,7 @@ class Exp2Ldmk(nn.Module):
 
     def load_param(self, params):
         # load weight_shape and weight_exp
-        with open('./base_weight.pickle', 'rb') as f:
+        with open('/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/base_weight.pickle', 'rb') as f:
             data = pickle.load(f)
         self.base = np.array(data['base'], dtype=np.float32)
         self.weight = np.array(data['weight'], dtype=np.float32)
@@ -395,9 +395,9 @@ if __name__ == "__main__":
     exp2ldmk = Exp2Ldmk(params)
     #get landmark txt for vid2vid
     name = 'M003' #'M030'
-    filepath = 'data/'+name+'/3DMM/test_results/' 
-    target_path = 'data/'+name+'/background/'#'data/'+name+'/3DMM/'+name+'_test_pose/'
-    txt_root = 'data/'+name+'/background/'#'/3DMM/3DMM/'
+    filepath = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/3DMM/test_results/' 
+    target_path = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'data/'+name+'/3DMM/'+name+'_test_pose/'
+    txt_root = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'/3DMM/3DMM/'
     save_root = 'result/test_keypoints_'+name+'_pose/'
     change_pose(filepath, target_path, txt_root, save_root, name)
 
