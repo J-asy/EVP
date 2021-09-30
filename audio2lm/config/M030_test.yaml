@@ -1,4 +1,4 @@
-at_model: pth/M030_20.pth
+at_model: /content/drive/MyDrive/FYP_1/EVP_datasets/audio2lm/pth/M030_20.pth
 sample_dir: result/M030.npy
 video_dir: result/M030.avi
 pca: basics/M030_U_106.npy
