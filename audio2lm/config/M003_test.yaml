@@ -1,4 +1,4 @@
-at_model: pth/M003_20.pth
+at_model: /content/drive/MyDrive/audio2lm/pth/M003_20.pth
 sample_dir: result/M003.npy
 video_dir: result/M003.avi
 pca: basics/M003_U_106.npy
