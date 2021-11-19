@@ -399,13 +399,13 @@ if __name__ == "__main__":
     target_path = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'data/'+name+'/3DMM/'+name+'_test_pose/'
     txt_root = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'/3DMM/3DMM/'
     #save_root = 'result/test_keypoints_'+name+'_pose/' # EDITED
-    save_root = 'content/vid2vid/datasets/face/test_keypoints_' + name + '_pose/'
+    save_root = 'content/drive/MyDrive/vid2vid/datasets/face/test_keypoints_' + name + '_pose/'
     change_pose(filepath, target_path, txt_root, save_root, name)
 
     #get image for vid2vid
     image_root = txt_root
     # out_root = 'result/test_img_'+name+'_pose/' # EDITED
-    out_root = 'content/vid2vid/datasets/face/test_img_' + name + '_pose/'
+    out_root = 'content/drive/MyDrive/vid2vid/datasets/face/test_img_' + name + '_pose/'
     prepare_image(save_root,image_root, out_root, name)
 
 
