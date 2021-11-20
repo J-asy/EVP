@@ -16,6 +16,7 @@ class Flatten(nn.Module):
 
 
 class Lm_encoder(nn.Module):
+    """ J: extract the landmark identity embedding fa with a multi-layer perceptron """
     def __init__(self):
         super(Lm_encoder, self).__init__()
         self.lmark_encoder = nn.Sequential(
@@ -23,7 +24,7 @@ class Lm_encoder(nn.Module):
             nn.ReLU(True),
             nn.Linear(256,512),
             nn.ReLU(True),
-            )
+        )
         
     def forward(self, example_landmark):
         example_landmark_f = self.lmark_encoder(example_landmark)
@@ -40,20 +41,18 @@ class Ct_encoder(nn.Module):
             conv2d(256,256,3,1,1),
             conv2d(256,512,3,1,1),
             nn.MaxPool2d(3, stride=(2,2))
-            )
+        )
         self.audio_encoder_fc = nn.Sequential(
             nn.Linear(1024 *12,2048),
             nn.ReLU(True),
             nn.Linear(2048,256),
             nn.ReLU(True)
-            )
+        )
         
     def forward(self, audio):
-        
         feature = self.audio_encoder(audio)
         feature = feature.view(feature.size(0),-1)
         x = self.audio_encoder_fc(feature)
-    
         return x
 
 
@@ -94,32 +93,31 @@ class EmotionNet(nn.Module):
         return x
 
 class Decoder(nn.Module):
+    """ J: predicts the landmark displacements ld by a long
+    short-term memory (LSTM) network followed by a two layer MLP """
     def __init__(self):
         super(Decoder, self).__init__()
         self.lstm = nn.LSTM(128*7,256,3,batch_first = True)
         self.lstm_fc = nn.Sequential(
             nn.Linear(256,16),#20
-            )
+    )
     
     def forward(self, lstm_input):
         hidden = ( torch.autograd.Variable(torch.zeros(3, lstm_input.size(0), 256).cuda()),# torch.Size([3, 16, 256])
                       torch.autograd.Variable(torch.zeros(3, lstm_input.size(0), 256).cuda()))# torch.Size([3, 16, 256])
-        
-        
+
        # lstm_input = torch.stack(lstm_input, dim = 1) #connect torch.Size([16, 16, 768])
         lstm_out, _ = self.lstm(lstm_input, hidden) #torch.Size([16, 16, 256])
         fc_out   = []
         for step_t in range(lstm_out.size(1)):
             fc_in = lstm_out[:,step_t,:]
             fc_out.append(self.lstm_fc(fc_in))
-        
-        
+
   #      features = torch.cat([content,  emotion], 1) #connect tensors inputs and dimension
   #      features = torch.unsqueeze(features,2)
   #      features = torch.unsqueeze(features,3)
   #      x = 90*self.decon(features) #[1, 1,28, 12]
-        
-        
+
         return torch.stack(fc_out, dim = 1)
 
 
@@ -144,8 +142,7 @@ class AT_emotion(nn.Module):
                                             +list(self.emo_encoder.parameters())
                                             +list(self.decoder.parameters())
                                             +list(self.lm_encoder.parameters()), opt.lr,betas=(opt.beta1, opt.beta2))
-    
-    
+
     def compute_acc(self,input_label, out):
         _, pred = out.topk(1, 1)
         pred0 = pred.squeeze().data
@@ -153,8 +150,7 @@ class AT_emotion(nn.Module):
         return acc
     
     def process(self,example_landmark, landmark, mfccs):
-        
-        
+
         l = self.lm_encoder(example_landmark)
         lstm_input = []
         
@@ -173,32 +169,23 @@ class AT_emotion(nn.Module):
             
         lstm_input = torch.stack(lstm_input, dim = 1)
         fake = self.decoder(lstm_input)
-        
      #   real = landmark - example_landmark.expand_as(landmark)
-        
-        
-        
+
         loss_pca = self.mse_loss_fn(fake, landmark)
         
         fake_result = torch.mm(fake[0]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(fake.shape[1],212).unsqueeze(0)
         for i in range(1,len(fake)):
             fake_result = torch.cat((fake_result,torch.mm(fake[i]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(fake.shape[1],212).unsqueeze(0)),0)
-            
-        
-        
+
         result = torch.mm(landmark[0]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(landmark.shape[1],212).unsqueeze(0)
         for i in range(1,len(landmark)):
             result = torch.cat((result,torch.mm(landmark[i]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(landmark.shape[1],212).unsqueeze(0)),0)
-            
-        
-        
+
       #  result = torch.mm(landmark,self.pca.transpose(0,1))+self.mean.expand(len(fake),16,212)
-        
+
         loss_lm = self.mse_loss_fn(fake_result, result)
        # loss = self.l1loss(fake, landmark)
-        
-        
-        
+
         return fake, loss_pca,10*loss_lm
     
     def forward(self, example_landmark, mfccs,emo_mfcc):
@@ -221,18 +208,14 @@ class AT_emotion(nn.Module):
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
-        
         fake = self.decoder(lstm_input)
-        
-        
         return fake
     
     def feature_input(self, example_landmark, mfccs,emo_feature):
          
         l = self.lm_encoder(example_landmark)
-        
+
         lstm_input = []
-        
         for step_t in range(mfccs.size(1)): #16 torch.Size([16, 16, 28, 12])
    #         current_audio = audio[ : ,step_t , :, :].unsqueeze(1) #unsqueeze(arg) -add argth dimension as 1 torch.Size([16, 1, 28, 12])
    #         current_feature = self.audio_encoder(current_audio) #torch.Size([16, 512, 12, 2])
@@ -242,17 +225,13 @@ class AT_emotion(nn.Module):
             e_feature = emo_feature[:,step_t,:]
             c_feature = self.con_encoder(mfcc)
      #       e_feature = self.emo_encoder(emo)
-            
-                   
-     
+
             current_feature = torch.cat([c_feature,e_feature],1)
             features = torch.cat([l,  current_feature], 1) #torch.Size([16, 768])
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
         fake = self.decoder(lstm_input)
-        
-        
         return fake
     
     def update_network(self, loss_pca, loss_lm):

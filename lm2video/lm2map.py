@@ -146,6 +146,7 @@ def ldmk3d_front(pose, vertex):
     return pt2d_x, pt2d_y
 '''
 
+# J: recover the 3D parameters from 2D landmarks by solving a non-linear optimization problem
 def _umeyama(src, dst, estimate_scale):
     """Estimate N-D similarity transformation with or without scaling.
 
