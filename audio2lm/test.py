@@ -15,7 +15,7 @@ import torch.nn as nn
 import torchvision
 from torch.autograd import Variable
 import librosa
-from models import AT_emoiton
+from models import AT_emotion
 import cv2
 #import scipy.misc
 from utils import VideoWriter, draw_mouth, add_audio, check_volume, change_mouth
@@ -86,7 +86,7 @@ def test(opt, config):
     mean =torch.FloatTensor( np.load(config['mean'])).cuda()
     
   
-    encoder = AT_emoiton(opt, config)
+    encoder = AT_emotion(opt, config)
     if opt.cuda:
         encoder = encoder.cuda()
 

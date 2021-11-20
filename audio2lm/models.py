@@ -15,7 +15,6 @@ class Flatten(nn.Module):
         return input.view(input.size(0), -1)
 
 
-
 class Lm_encoder(nn.Module):
     def __init__(self):
         super(Lm_encoder, self).__init__()
@@ -33,7 +32,7 @@ class Lm_encoder(nn.Module):
 class Ct_encoder(nn.Module):
     def __init__(self):
         super(Ct_encoder, self).__init__()
-        self.audio_eocder = nn.Sequential(
+        self.audio_encoder = nn.Sequential(
             conv2d(1,64,3,1,1),
             conv2d(64,128,3,1,1),
             nn.MaxPool2d(3, stride=(1,2)),
@@ -42,19 +41,18 @@ class Ct_encoder(nn.Module):
             conv2d(256,512,3,1,1),
             nn.MaxPool2d(3, stride=(2,2))
             )
-        self.audio_eocder_fc = nn.Sequential(
+        self.audio_encoder_fc = nn.Sequential(
             nn.Linear(1024 *12,2048),
             nn.ReLU(True),
             nn.Linear(2048,256),
-            nn.ReLU(True),
-       
+            nn.ReLU(True)
             )
         
     def forward(self, audio):
         
-        feature = self.audio_eocder(audio)
+        feature = self.audio_encoder(audio)
         feature = feature.view(feature.size(0),-1)
-        x = self.audio_eocder_fc(feature)
+        x = self.audio_encoder_fc(feature)
     
         return x
 
@@ -63,7 +61,7 @@ class EmotionNet(nn.Module):
     def __init__(self):
         super(EmotionNet, self).__init__()
 
-        self.emotion_eocder = nn.Sequential(
+        self.emotion_encoder = nn.Sequential(
             conv2d(1,64,3,1,1),
             
             nn.MaxPool2d((1,3), stride=(1,2)), #[1, 64, 12, 12]
@@ -78,7 +76,7 @@ class EmotionNet(nn.Module):
             nn.MaxPool2d((1,2), stride=(1,2)) #[1, 512, 1, 6]
             
             )
-        self.emotion_eocder_fc = nn.Sequential(
+        self.emotion_encoder_fc = nn.Sequential(
             nn.Linear(512 *6,2048),
             nn.ReLU(True),
             nn.Linear(2048,128),
@@ -90,11 +88,10 @@ class EmotionNet(nn.Module):
     def forward(self, mfcc): 
        # mfcc= torch.unsqueeze(mfcc, 1)
         mfcc=torch.transpose(mfcc,2,3)
-        feature = self.emotion_eocder(mfcc)
+        feature = self.emotion_encoder(mfcc)
         feature = feature.view(feature.size(0),-1)
-        x = self.emotion_eocder_fc(feature)
-        
-        
+        x = self.emotion_encoder_fc(feature)
+
         return x
 
 class Decoder(nn.Module):
@@ -128,9 +125,9 @@ class Decoder(nn.Module):
 
 
                
-class AT_emoiton(nn.Module):
+class AT_emotion(nn.Module):
     def __init__(self,opt,config):
-        super(AT_emoiton, self).__init__()
+        super(AT_emotion, self).__init__()
         
         self.con_encoder = Ct_encoder()
         self.emo_encoder = EmotionNet()
@@ -160,14 +157,13 @@ class AT_emoiton(nn.Module):
         
         
         l = self.lm_encoder(example_landmark)
-        
         lstm_input = []
         
         for step_t in range(mfccs.size(1)): #16 torch.Size([16, 16, 28, 12])
    #         current_audio = audio[ : ,step_t , :, :].unsqueeze(1) #unsqueeze(arg) -add argth dimension as 1 torch.Size([16, 1, 28, 12])
-   #         current_feature = self.audio_eocder(current_audio) #torch.Size([16, 512, 12, 2])
+   #         current_feature = self.audio_encoder(current_audio) #torch.Size([16, 512, 12, 2])
    #         current_feature = current_feature.view(current_feature.size(0), -1) # torch.Size([16, 12288])
-   #         current_feature = self.audio_eocder_fc(current_feature) # torch.Size([16, 256])
+   #         current_feature = self.audio_encoder_fc(current_feature) # torch.Size([16, 256])
             mfcc = mfccs[:,step_t,:,:].unsqueeze(1)
             c_feature = self.con_encoder(mfcc)
             e_feature = self.emo_encoder(mfcc)
@@ -177,7 +173,6 @@ class AT_emoiton(nn.Module):
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
-        
         fake = self.decoder(lstm_input)
         
      #   real = landmark - example_landmark.expand_as(landmark)
@@ -215,9 +210,9 @@ class AT_emoiton(nn.Module):
         
         for step_t in range(mfccs.size(1)): #16 torch.Size([16, 16, 28, 12])
    #         current_audio = audio[ : ,step_t , :, :].unsqueeze(1) #unsqueeze(arg) -add argth dimension as 1 torch.Size([16, 1, 28, 12])
-   #         current_feature = self.audio_eocder(current_audio) #torch.Size([16, 512, 12, 2])
+   #         current_feature = self.audio_encoder(current_audio) #torch.Size([16, 512, 12, 2])
    #         current_feature = current_feature.view(current_feature.size(0), -1) # torch.Size([16, 12288])
-   #         current_feature = self.audio_eocder_fc(current_feature) # torch.Size([16, 256])
+   #         current_feature = self.audio_encoder_fc(current_feature) # torch.Size([16, 256])
             mfcc = mfccs[:,step_t,:,:].unsqueeze(1)
             emo = emo_mfcc[:,step_t,:,:].unsqueeze(1)
             c_feature = self.con_encoder(mfcc)
@@ -242,9 +237,9 @@ class AT_emoiton(nn.Module):
         
         for step_t in range(mfccs.size(1)): #16 torch.Size([16, 16, 28, 12])
    #         current_audio = audio[ : ,step_t , :, :].unsqueeze(1) #unsqueeze(arg) -add argth dimension as 1 torch.Size([16, 1, 28, 12])
-   #         current_feature = self.audio_eocder(current_audio) #torch.Size([16, 512, 12, 2])
+   #         current_feature = self.audio_encoder(current_audio) #torch.Size([16, 512, 12, 2])
    #         current_feature = current_feature.view(current_feature.size(0), -1) # torch.Size([16, 12288])
-   #         current_feature = self.audio_eocder_fc(current_feature) # torch.Size([16, 256])
+   #         current_feature = self.audio_encoder_fc(current_feature) # torch.Size([16, 256])
             mfcc = mfccs[:,step_t,:,:].unsqueeze(1)
             e_feature = emo_feature[:,step_t,:]
             c_feature = self.con_encoder(mfcc)
@@ -257,14 +252,12 @@ class AT_emoiton(nn.Module):
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
-        
         fake = self.decoder(lstm_input)
         
         
         return fake
     
     def update_network(self, loss_pca, loss_lm):
-        
         loss = loss_pca + loss_lm
         self.optimizer.zero_grad()
         loss.backward()
@@ -281,9 +274,7 @@ class AT_emoiton(nn.Module):
         self.emo_encoder.train()
         
         output, loss_pca, loss_lm = self.process(example_landmark, landmark, mfccs)
-
         self.update_network(loss_pca, loss_lm )
-
         return output, loss_pca, loss_lm 
     
     def val_func(self, example_landmark, landmark, mfccs):
