@@ -80,8 +80,7 @@ class EmotionNet(nn.Module):
             nn.Linear(512 *6,2048),
             nn.ReLU(True),
             nn.Linear(2048,128),
-            nn.ReLU(True),
-            
+            nn.ReLU(True)
             )
         self.last_fc = nn.Linear(128,8)
 
@@ -205,7 +204,6 @@ class AT_emotion(nn.Module):
     def forward(self, example_landmark, mfccs,emo_mfcc):
          
         l = self.lm_encoder(example_landmark)
-        
         lstm_input = []
         
         for step_t in range(mfccs.size(1)): #16 torch.Size([16, 16, 28, 12])
