@@ -22,6 +22,9 @@ from tqdm import tqdm
 from skimage import transform as tf
 import torchvision.transforms as transforms
 import random
+
+
+
 def shape_to_np(shape, dtype="int"):
     # initialize the list of (x, y)-coordinates
     coords = np.zeros((shape.num_parts, 2), dtype=dtype)
@@ -33,6 +36,7 @@ def shape_to_np(shape, dtype="int"):
 
     # return the list of (x, y)-coordinates
     return coords
+
 def rect_to_bb(rect):
     # take a bounding predicted by dlib and convert it
     # to the format (x, y, w, h) as we would normally do
@@ -43,7 +47,7 @@ def rect_to_bb(rect):
     h = rect.bottom() - y
 
     # return a tuple of (x, y, w, h)
-    return (x, y, w, h)
+    return x, y, w, h
 
 
 def melSpectra(y, sr, wsize, hsize):
@@ -61,6 +65,7 @@ def melSpectra(y, sr, wsize, hsize):
 
 def draw_mouth(landmark, width, height):
     landmark = landmark.reshape(106*2,)
+
     # draw mouth from mouth landmarks, landmarks: mouth landmark points, format: x1, y1, x2, y2, ..., x20,
     heatmap = 255*np.ones((width, height, 3), dtype=np.uint8)
     circle_color = (255, 0, 0)
@@ -70,7 +75,8 @@ def draw_mouth(landmark, width, height):
         for pts_idx in range(start_idx, end_idx):
             cv2.line(heatmap, (int(landmark[pts_idx * 2]), int(landmark[pts_idx * 2 + 1])),
                      (int(landmark[pts_idx * 2 + 2]), int(landmark[pts_idx * 2 + 3])), line_color, 3)
-    draw_line(0, 32)     # face 
+    draw_line(0, 32)     # face
+
     # EYEBROW + MOUTH
     draw_line(33, 37)     
     draw_line(38, 42)     
@@ -108,6 +114,7 @@ def draw_mouth(landmark, width, height):
              (int(landmark[73 * 2]), int(landmark[73 * 2 + 1])), thickness=3, color=line_color)
     cv2.line(heatmap, (int(landmark[52 * 2]), int(landmark[52 * 2 + 1])),
              (int(landmark[57 * 2]), int(landmark[57 * 2 + 1])), thickness=3, color=line_color)
+
     #RIGHT EYE
     draw_line(58, 59)   # lower inner
     draw_line(60, 62)    # lower outer
@@ -145,6 +152,7 @@ def draw_mouth(landmark, width, height):
                    color=circle_color)
     return heatmap
 
+
 class VideoWriter(object):
     def __init__(self, path, width, height, fps):
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -160,17 +168,12 @@ class VideoWriter(object):
         
 
 def crop_image(image_path, detector, shape, predictor):
-    
 
-  
     image = cv2.imread(image_path)
-
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
- 
     rects = detector(gray, 1)
-    for (i, rect) in enumerate(rects):
 
+    for (i, rect) in enumerate(rects):
         shape = predictor(gray, rect)
         shape = shape_to_np(shape)
       
@@ -198,6 +201,7 @@ def image_to_video(sample_dir = None, video_name = None):
     print (command)
     os.system(command)
 
+
 def add_audio(video_name=None, audio_dir = None):
 
     command = 'ffmpeg -i ' + video_name  + ' -i ' + audio_dir + ' -vcodec copy  -acodec copy -y  ' + video_name.replace('.avi','.mov')
@@ -207,6 +211,7 @@ def add_audio(video_name=None, audio_dir = None):
     print (command)
     os.system(command)
 
+
 def addContext(melSpc, ctxWin):
     ctx = melSpc[:,:]
     filler = melSpc[0, :]
@@ -214,9 +219,6 @@ def addContext(melSpc, ctxWin):
         melSpc = np.insert(melSpc, 0, filler, axis=0)[:ctx.shape[0], :]
         ctx = np.append(ctx, melSpc, axis=1)
     return ctx
-
-
-
 
 
 def convert_to_grayscale(cv2im):
@@ -348,26 +350,31 @@ def get_positive_negative_saliency(gradient):
     neg_saliency = (np.maximum(0, -gradient) / -gradient.min())
     return pos_saliency, neg_saliency
 
+
 def check_volume(speech,sr):
     length = int(len(speech)/640)
     speech = speech[:length*640]
     speech = speech.reshape(-1,640)
     clip = np.abs(speech.sum(1))
     clip = clip > 0.1
+
     i = 0
     while i < len(clip):
-        if(clip[i] == 0):
+        if clip[i] == 0:
             n = 0
-            while((i+n) < len(clip) and clip[i+n] == 0):
+            while (i + n) < len(clip) and clip[i + n] == 0:
                 n = n+1
-            if (n < 20):
+
+            if n < 20:
                 clip[i:i+n] = 1
+
             i = i+n
         else:
             if (i+1) < len(clip) and clip[i+1] ==0 and i > 0 and clip[i-1] ==0 :
                 clip[i] = 0
             i = i+1
     return clip
+
 
 def change_mouth(fake_lmark, clip):
     if len(fake_lmark) < len(clip):
@@ -376,9 +383,11 @@ def change_mouth(fake_lmark, clip):
     s = 1
     for i in range(len(fake_lmark)):
         lmark = fake_lmark[i]
+
         if (lmark[102][1] - lmark[98][1]) < s:
             s = lmark[102][1] - lmark[98][1]
             index = i
+
     close_mouth = fake_lmark[index]
     c = np.array(clip, dtype = float)
     for i in range(1, len(c)):
@@ -392,6 +401,7 @@ def change_mouth(fake_lmark, clip):
                 c[i+2] = 0.4
                 fake_lmark[i+3] = 0.2*fake_lmark[i-1] + 0.8*close_mouth
                 c[i+3] = 0.2
+
             elif ((i+1)< len(c)) and (c[i+1] == 1):
                 fake_lmark[i] = 0.8*fake_lmark[i+1] + 0.2*close_mouth
                 c[i] = 0.8
@@ -401,20 +411,12 @@ def change_mouth(fake_lmark, clip):
                 c[i-2] = 0.4
                 fake_lmark[i-3] = 0.2*fake_lmark[i+1] + 0.8*close_mouth
                 c[i-3] = 0.2
+
     for i in range(len(c)):
         if c[i] == 0:
             ratio = random.uniform(0.9,1)
             fake_lmark[i] = (1-ratio)*fake_lmark[i] + ratio*close_mouth
+
     return fake_lmark
     
     
-    
-        
-        
-        
-
-def main():
-    return
-
-if __name__ == "__main__":
-    main()

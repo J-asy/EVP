@@ -54,8 +54,8 @@ def multi2single(model_path, id):
 def test(opt, config):
     os.environ["CUDA_VISIBLE_DEVICES"] = opt.device_ids
 
-    pca = torch.FloatTensor( np.load(config['pca'])[:,:16]).cuda()#20
-    mean =torch.FloatTensor( np.load(config['mean'])).cuda()
+    pca = torch.FloatTensor(np.load(config['pca'])[:,:16]).cuda()#20
+    mean =torch.FloatTensor(np.load(config['mean'])).cuda()
 
     encoder = AT_emotion(opt, config)
     if opt.cuda:
@@ -96,22 +96,22 @@ def test(opt, config):
     with torch.no_grad():
         input_mfcc = []
         while ind <= int(mfcc.shape[0]/4) - 4:
-            t_mfcc =mfcc[( ind - 3)*4: (ind + 4)*4, 1:]
+            t_mfcc = mfcc[(ind - 3)*4: (ind + 4)*4, 1:]
             t_mfcc = torch.FloatTensor(t_mfcc).cuda()
             input_mfcc.append(t_mfcc)
             ind += 1
-        input_mfcc = torch.stack(input_mfcc,dim = 0)
+        input_mfcc = torch.stack(input_mfcc,dim=0)
         
         if opt.condition == 'audio':
             speech, sr = librosa.load(emo_file, sr=16000)
-
             speech = np.insert(speech, 0, np.zeros(1920))
             speech = np.append(speech, np.zeros(1920))
             mfcc_emo = python_speech_features.mfcc(speech,16000,winstep=0.01)
+
             ind = 3
             emo_mfcc = []
             while ind <= int(mfcc_emo.shape[0]/4) - 4:
-                t_mfcc =mfcc_emo[( ind - 3)*4: (ind + 4)*4, 1:]
+                t_mfcc = mfcc_emo[(ind - 3)*4: (ind + 4)*4, 1:]
                 t_mfcc = torch.FloatTensor(t_mfcc).cuda()
                 emo_mfcc.append(t_mfcc)
                 ind += 1
@@ -121,16 +121,19 @@ def test(opt, config):
             # J: make sure emo_mfcc shape is the same with input_mfcc
             if emo_mfcc.size(0) > input_mfcc.size(0):
                 emo_mfcc = emo_mfcc[:input_mfcc.size(0),:,:]
+
             elif emo_mfcc.size(0) < input_mfcc.size(0):
                 n = input_mfcc.size(0) - emo_mfcc.size(0)
                 add = emo_mfcc[-1,:,:].unsqueeze(0)
+
                 for i in range(n):
                     emo_mfcc = torch.cat([emo_mfcc,add],0)
         
             input_mfcc = input_mfcc.unsqueeze(0)
             emo_mfcc = emo_mfcc.unsqueeze(0)
-            fake_lmark = encoder(example_landmark, input_mfcc,emo_mfcc)
-            fake_lmark = fake_lmark.view(fake_lmark.size(0) *fake_lmark.size(1) , 16)
+
+            fake_lmark = encoder(example_landmark, input_mfcc, emo_mfcc)
+            fake_lmark = fake_lmark.view(fake_lmark.size(0)*fake_lmark.size(1), 16)
 
         elif opt.condition == 'feature':
             emo_f = []
@@ -144,14 +147,14 @@ def test(opt, config):
             input_mfcc = input_mfcc.unsqueeze(0)
             emo_f = emo_f.unsqueeze(0)
     
-            fake_lmark = encoder.feature_input(example_landmark, input_mfcc,emo_f)
-            fake_lmark = fake_lmark.view(fake_lmark.size(0) *fake_lmark.size(1) , 16)
+            fake_lmark = encoder.feature_input(example_landmark, input_mfcc, emo_f)
+            fake_lmark = fake_lmark.view(fake_lmark.size(0) *fake_lmark.size(1), 16)
 
         else:
             raise Exception('condition wrong: can only be audio/feature.')
 
       #if get D-value - J: refers to decoder D??
-        fake_lmark=fake_lmark + example_landmark.expand_as(fake_lmark)
+        fake_lmark = fake_lmark + example_landmark.expand_as(fake_lmark)
 
         fake_lmark = torch.mm( fake_lmark, pca.t() )
         fake_lmark = fake_lmark + mean.expand_as(fake_lmark)

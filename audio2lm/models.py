@@ -30,6 +30,7 @@ class Lm_encoder(nn.Module):
         example_landmark_f = self.lmark_encoder(example_landmark)
         return example_landmark_f
 
+
 class Ct_encoder(nn.Module):
     def __init__(self):
         super(Ct_encoder, self).__init__()
@@ -62,25 +63,19 @@ class EmotionNet(nn.Module):
 
         self.emotion_encoder = nn.Sequential(
             conv2d(1,64,3,1,1),
-            
             nn.MaxPool2d((1,3), stride=(1,2)), #[1, 64, 12, 12]
             conv2d(64,128,3,1,1),
-            
             conv2d(128,256,3,1,1),
-            
             nn.MaxPool2d((12,1), stride=(12,1)), #[1, 256, 1, 12]
-            
             conv2d(256,512,3,1,1),
-            
             nn.MaxPool2d((1,2), stride=(1,2)) #[1, 512, 1, 6]
-            
-            )
+        )
         self.emotion_encoder_fc = nn.Sequential(
             nn.Linear(512 *6,2048),
             nn.ReLU(True),
             nn.Linear(2048,128),
             nn.ReLU(True)
-            )
+        )
         self.last_fc = nn.Linear(128,8)
 
     def forward(self, mfcc): 
@@ -91,6 +86,7 @@ class EmotionNet(nn.Module):
         x = self.emotion_encoder_fc(feature)
 
         return x
+
 
 class Decoder(nn.Module):
     """ J: predicts the landmark displacements ld by a long
@@ -103,7 +99,7 @@ class Decoder(nn.Module):
     )
     
     def forward(self, lstm_input):
-        hidden = ( torch.autograd.Variable(torch.zeros(3, lstm_input.size(0), 256).cuda()),# torch.Size([3, 16, 256])
+        hidden = (torch.autograd.Variable(torch.zeros(3, lstm_input.size(0), 256).cuda()),# torch.Size([3, 16, 256])
                       torch.autograd.Variable(torch.zeros(3, lstm_input.size(0), 256).cuda()))# torch.Size([3, 16, 256])
 
        # lstm_input = torch.stack(lstm_input, dim = 1) #connect torch.Size([16, 16, 768])
@@ -150,7 +146,6 @@ class AT_emotion(nn.Module):
         return acc
     
     def process(self,example_landmark, landmark, mfccs):
-
         l = self.lm_encoder(example_landmark)
         lstm_input = []
         
@@ -189,7 +184,6 @@ class AT_emotion(nn.Module):
         return fake, loss_pca,10*loss_lm
     
     def forward(self, example_landmark, mfccs,emo_mfcc):
-         
         l = self.lm_encoder(example_landmark)
         lstm_input = []
         
@@ -212,7 +206,6 @@ class AT_emotion(nn.Module):
         return fake
     
     def feature_input(self, example_landmark, mfccs,emo_feature):
-         
         l = self.lm_encoder(example_landmark)
 
         lstm_input = []
@@ -244,14 +237,13 @@ class AT_emotion(nn.Module):
         self.scheduler.step(self.clock.epoch)
 
     def train_func(self, example_landmark, landmark, mfccs):
-        
         self.lm_encoder.train()
         self.decoder.train()
         self.con_encoder.train()
         self.emo_encoder.train()
         
         output, loss_pca, loss_lm = self.process(example_landmark, landmark, mfccs)
-        self.update_network(loss_pca, loss_lm )
+        self.update_network(loss_pca, loss_lm)
         return output, loss_pca, loss_lm 
     
     def val_func(self, example_landmark, landmark, mfccs):
@@ -276,8 +268,7 @@ class AT_emotion(nn.Module):
     #    target2 = data['target22']
     #    target12 = data['target12']
     #    target21 = data['target21']
-        
-        
+
         return 0 
     
 
