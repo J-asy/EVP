@@ -34,7 +34,7 @@ class Lm_encoder(nn.Module):
 class Ct_encoder(nn.Module):
     def __init__(self):
         super(Ct_encoder, self).__init__()
-        self.audio_encoder = nn.Sequential(
+        self.audio_eocder = nn.Sequential(
             conv2d(1,64,3,1,1),
             conv2d(64,128,3,1,1),
             nn.MaxPool2d(3, stride=(1,2)),
@@ -43,7 +43,7 @@ class Ct_encoder(nn.Module):
             conv2d(256,512,3,1,1),
             nn.MaxPool2d(3, stride=(2,2))
         )
-        self.audio_encoder_fc = nn.Sequential(
+        self.audio_eocder_fc = nn.Sequential(
             nn.Linear(1024 *12,2048),
             nn.ReLU(True),
             nn.Linear(2048,256),
@@ -51,9 +51,9 @@ class Ct_encoder(nn.Module):
         )
         
     def forward(self, audio):
-        feature = self.audio_encoder(audio)
+        feature = self.audio_eocder(audio)
         feature = feature.view(feature.size(0),-1)
-        x = self.audio_encoder_fc(feature)
+        x = self.audio_eocder_fc(feature)
         return x
 
 
@@ -61,7 +61,7 @@ class EmotionNet(nn.Module):
     def __init__(self):
         super(EmotionNet, self).__init__()
 
-        self.emotion_encoder = nn.Sequential(
+        self.emotion_eocder = nn.Sequential(
             conv2d(1,64,3,1,1),
             nn.MaxPool2d((1,3), stride=(1,2)), #[1, 64, 12, 12]
             conv2d(64,128,3,1,1),
@@ -70,7 +70,7 @@ class EmotionNet(nn.Module):
             conv2d(256,512,3,1,1),
             nn.MaxPool2d((1,2), stride=(1,2)) #[1, 512, 1, 6]
         )
-        self.emotion_encoder_fc = nn.Sequential(
+        self.emotion_eocder_fc = nn.Sequential(
             nn.Linear(512 *6,2048),
             nn.ReLU(True),
             nn.Linear(2048,128),
@@ -81,10 +81,9 @@ class EmotionNet(nn.Module):
     def forward(self, mfcc): 
        # mfcc= torch.unsqueeze(mfcc, 1)
         mfcc=torch.transpose(mfcc,2,3)
-        feature = self.emotion_encoder(mfcc)
+        feature = self.emotion_eocder(mfcc)
         feature = feature.view(feature.size(0),-1)
-        x = self.emotion_encoder_fc(feature)
-
+        x = self.emotion_eocder_fc(feature)
         return x
 
 
