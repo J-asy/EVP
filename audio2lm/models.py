@@ -162,11 +162,11 @@ class AT_emotion(nn.Module):
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
-        fake = self.decoder(lstm_input)
+        fake = self.decoder(lstm_input) # J: landmark displacement??
      #   real = landmark - example_landmark.expand_as(landmark)
 
         loss_pca = self.mse_loss_fn(fake, landmark)
-        
+
         fake_result = torch.mm(fake[0]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(fake.shape[1],212).unsqueeze(0)
         for i in range(1,len(fake)):
             fake_result = torch.cat((fake_result,torch.mm(fake[i]+example_landmark,self.pca.transpose(0,1))+self.mean.expand(fake.shape[1],212).unsqueeze(0)),0)
@@ -180,7 +180,7 @@ class AT_emotion(nn.Module):
         loss_lm = self.mse_loss_fn(fake_result, result)
        # loss = self.l1loss(fake, landmark)
 
-        return fake, loss_pca,10*loss_lm
+        return fake, loss_pca, 10*loss_lm
     
     def forward(self, example_landmark, mfccs,emo_mfcc):
         l = self.lm_encoder(example_landmark)
@@ -195,7 +195,8 @@ class AT_emotion(nn.Module):
             emo = emo_mfcc[:,step_t,:,:].unsqueeze(1)
             c_feature = self.con_encoder(mfcc)
             e_feature = self.emo_encoder(emo)
-            
+
+            # J: cross reconstruction - content from mfcc, emotion from emo_mfcc
             current_feature = torch.cat([c_feature,e_feature],1)
             features = torch.cat([l,  current_feature], 1) #torch.Size([16, 768])
             lstm_input.append(features)
@@ -204,7 +205,7 @@ class AT_emotion(nn.Module):
         fake = self.decoder(lstm_input)
         return fake
     
-    def feature_input(self, example_landmark, mfccs,emo_feature):
+    def feature_input(self, example_landmark, mfccs, emo_feature):
         l = self.lm_encoder(example_landmark)
 
         lstm_input = []
@@ -218,8 +219,9 @@ class AT_emotion(nn.Module):
             c_feature = self.con_encoder(mfcc)
      #       e_feature = self.emo_encoder(emo)
 
+            # J: cross reconstruction - content from mfcc, emotion from emo_mfcc
             current_feature = torch.cat([c_feature,e_feature],1)
-            features = torch.cat([l,  current_feature], 1) #torch.Size([16, 768])
+            features = torch.cat([l, current_feature], 1) #torch.Size([16, 768])
             lstm_input.append(features)
             
         lstm_input = torch.stack(lstm_input, dim = 1)
