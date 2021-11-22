@@ -120,6 +120,8 @@ def rotation(rotation_mat, quaternion):
     return rotation_mat
 
 def ldmk3d_2d(pose, vertex):
+    """ J: project adapted 3D key points to the image plane with scale orthographic projection
+    """
     rotation_mat_ = torch.zeros(1, 3, 3, dtype=torch.float32, requires_grad=True).cuda()
     # get rotation matrix
     rotation_mat = rotation(rotation_mat_, pose[:, :3]).detach().cuda()
@@ -129,6 +131,7 @@ def ldmk3d_2d(pose, vertex):
     pt2d_x = rotate_vertex[0] * pose[0, 3] + pose[0, 4]
     pt2d_y = rotate_vertex[1] * pose[0, 3] + pose[0, 5]
     return pt2d_x, pt2d_y
+
 '''
 def ldmk3d_front(pose, vertex):
  #   rotation_mat_ = torch.zeros(1, 3, 3, dtype=torch.float32, requires_grad=True).cuda()
@@ -146,7 +149,11 @@ def ldmk3d_front(pose, vertex):
     return pt2d_x, pt2d_y
 '''
 
-# J: recover the 3D parameters from 2D landmarks by solving a non-linear optimization problem
+# J: What umeyama algo achieves -
+# Two point patterns (sets of points) (x/sub i/) and (x/sub i/); i=1, 2, . . ., n
+# are given in m-dimensional space, and the similarity transformation parameters
+# (rotation, translation, and scaling) that give the least mean squared error
+# between these point patterns are needed.
 def _umeyama(src, dst, estimate_scale):
     """Estimate N-D similarity transformation with or without scaling.
 
@@ -291,7 +298,7 @@ def change_pose(filepath, target_path, txt_root, save_root, name):
             i_name = info[-1]
             video_name = i_name.split('.')[0]
          
-            if(int(video_name)==number):
+            if int(video_name) == number:
                 
                 print('IMG: {}'.format(video_name))                
                 
@@ -300,10 +307,10 @@ def change_pose(filepath, target_path, txt_root, save_root, name):
                 exp = torch.tensor([float(it) for it in info[199:199 + 29]]).unsqueeze(0).float().cuda()
 
                 if index < len(target_pose)-1 :
-                
                     pose_a = target_pose[index+2].tolist()
                 else:
                     pose_a = target_pose[len(target_pose)-1].tolist()
+
                 pose_b = [float(it) for it in info[199 + 29:199 + 29 + 6]]
                 pose = pose_a[:3] + pose_b[3:]
 
@@ -318,6 +325,7 @@ def change_pose(filepath, target_path, txt_root, save_root, name):
         
                 ldmk_de = exp2ldmk(shape, exp, pose)[:, ldmk_idx].contiguous()
                 pose_de = pose.contiguous()
+
                 raw_x,raw_y = ldmk3d_2d(pose_de,ldmk_de)
        
                 x = raw_x.cpu().tolist()
@@ -351,7 +359,6 @@ def change_pose(filepath, target_path, txt_root, save_root, name):
             new[j]=one_euro_filter.process(new[j])
 
         for k in range(len(new)):
-      
             tar = new[k].reshape(-1,2)
             save_name = os.path.join(save_path , '{:06d}'.format(k+2)+'.txt')
             np.savetxt(save_name, tar, fmt='%d', delimiter=',')
@@ -388,6 +395,7 @@ def prepare_image(save_root,image_root, out_root, name):
 # num_pose = 6
 
 if __name__ == "__main__":
+    # J: ldmk_idx.txt contains the 106 keypoints (landmarks detected)
     with open("./ldmk_idx.txt", 'r') as f:
         line = f.readline()
     info = line.strip().split()
@@ -400,13 +408,13 @@ if __name__ == "__main__":
     target_path = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'data/'+name+'/3DMM/'+name+'_test_pose/'
     txt_root = '/content/drive/MyDrive/FYP_1/EVP_datasets/lm2video/data/'+name+'/background/'#'/3DMM/3DMM/'
     #save_root = 'result/test_keypoints_'+name+'_pose/' # EDITED
-    save_root = '/content/drive/MyDrive/vid2vid/datasets/face/test_keypoints_' + name + '_pose/'
+    save_root = '/content/drive/Shareddrives/Vid2vid/vid2vid/datasets/face/test_keypoints_' + name + '_pose/'
     change_pose(filepath, target_path, txt_root, save_root, name)
 
     #get image for vid2vid
     image_root = txt_root
     # out_root = 'result/test_img_'+name+'_pose/' # EDITED
-    out_root = '/content/drive/MyDrive/vid2vid/datasets/face/test_img_' + name + '_pose/'
+    out_root = '/content/drive/Shareddrives/Vid2vid/vid2vid/datasets/face/test_img_' + name + '_pose/'
     prepare_image(save_root,image_root, out_root, name)
 
 
